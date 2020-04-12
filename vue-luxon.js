@@ -87,53 +87,6 @@ module.exports = {
 
     const clientFormats = {};
 
-    const trans = (nameRaw, amountRaw, parser, options) => {
-      let amount = Math.round(amountRaw);
-      let name = nameRaw.slice(0, -1);
-      let variants = options.i18n[name].split("|");
-      let amount_name =
-        options.i18n.lang == "en-EN" ?
-        amount == 1 ? "one" : "other" :
-        new Intl.PluralRules(options.i18n.lang).select(amount);
-
-      let str = "";
-      for (let i = 0; variants.length > i; i++) {
-        if (variants[i].match(/\[\w+\]/) == "[" + amount_name + "]")
-          str = variants[i].replace(/\[\w+\]/, "");
-      }
-      return parser
-        .replace(/\:ago/, options.i18n.ago)
-        .replace(/\:in/, options.i18n.in)
-        .replace(/\:a/, amount)
-        .replace(/\:w/, str);
-    };
-
-    const format_dfh = (cdt, options) => {
-      if (!cdt || !cdt.isValid) return optionsGlobal.invalid(cdt.invalid);
-
-      let from = cdt;
-      let till = DateTime.local().setZone(options.serverZone);
-      let p = from.until(till),
-        f = till.until(from);
-      let c = p.isValid ? p : f.isValid ? f : false;
-      if (c == false) return optionsGlobal.invalid(cdt.invalid);
-      let obj = c
-        .toDuration(
-          options.diffForHumans ? options.diffForHumans.durations : []
-        )
-        .toObject();
-      let closestName = Object.getOwnPropertyNames(obj)[0];
-      let isNow = obj[closestName] < 1;
-      return trans(
-        closestName,
-        obj[closestName],
-        p.isValid && !isNow ?
-        options.diffForHumans.past :
-        !isNow ? options.diffForHumans.future : options.diffForHumans.now,
-        options
-      );
-    };
-
     const parse = (str, options) => {
       if (!str) return "never";
       let a = str,
@@ -242,7 +195,7 @@ module.exports = {
       switch (cf.toLowerCase()) {
         case "diffforhumans":
         case "dfh":
-          return format_dfh(dt, options);
+          return dt.toRelative();
           break;
         case "locale":
           return dt.setLocale(ll).toLocaleString(lf);
